@@ -14,29 +14,30 @@
   </form>
   <p id="response"></p>
 
-  <script>
-    document.getElementById("gdForm").addEventListener("submit", async function (e) {
-      e.preventDefault();
+<script>
+  document.getElementById("gdForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
 
-      const username = document.getElementById("username").value;
-      const password = document.getElementById("password").value;
-      const confirm = document.getElementById("confirm").value;
-      const email = document.getElementById("email").value;
+    const username = document.getElementById("username").value;
+    const password = document.getElementById("password").value;
+    const confirm = document.getElementById("confirm").value;
+    const email = document.getElementById("email").value;
 
-      if (password !== confirm) {
-        document.getElementById("response").innerText = "Passwords do not match.";
-        return;
-      }
+    if (password !== confirm) {
+      document.getElementById("response").innerText = "Passwords do not match.";
+      return;
+    }
 
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, email })
-      });
-
-      const text = await res.text();
-      document.getElementById("response").innerText = "Response: " + text;
+    const res = await fetch("/api/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userName: username, password, email })
     });
-  </script>
+
+    const text = await res.text();
+    document.getElementById("response").innerText = "Response: " + text;
+  });
+</script>
+
 </body>
 </html>
