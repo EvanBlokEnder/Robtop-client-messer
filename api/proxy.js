@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 
 async function sendGeometryDashRequest() {
-  const url = 'https://boomlings.com/database';
+  const url = 'https://boomlings.com/database/connections.php';
 
   // This JSON is an example of what the GD client might send in body
   // (Note: Boomlings.com/database expects POST with 'gameVersion' param usually)
