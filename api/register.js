@@ -22,7 +22,8 @@ export default async function handler(req, res) {
   }).toString();
 
   try {
-    const boomlingsResponse = await fetch('https://www.boomlings.com/database/accounts/registerGJAccount.php', {
+    const boomlingsResponse = await fetch('https://www.boomlings.com/database/accounts/createGJAccount.php
+', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
