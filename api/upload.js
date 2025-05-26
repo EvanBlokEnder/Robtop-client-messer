@@ -1,46 +1,54 @@
-const crypto = require('crypto');
+const fetch = require('node-fetch');
 
-let sessions = {}; // We'll sync with auth.js sessions in a real app (for demo: separate)
+function generateRandomLevelData(username, password) {
+  // Minimal example with random objects encoded as a level string (this is very simplified)
+  const randomLevelString = '0,0,0,0,0'; // You can generate a real GD level string here
 
-function verifySession(sessionId) {
-  // For demo, we accept any sessionId - in real app sync with auth.js sessions
-  return sessionId && typeof sessionId === 'string';
-}
-
-function randomLevel() {
-  // Return a JSON representing a random level with random objects for demo
-  const numObjects = Math.floor(Math.random() * 10) + 1;
-  let objects = [];
-  for (let i = 0; i < numObjects; i++) {
-    objects.push({
-      id: crypto.randomBytes(4).toString('hex'),
-      type: ['spike', 'jump_pad', 'coin'][Math.floor(Math.random() * 3)],
-      x: Math.floor(Math.random() * 500),
-      y: Math.floor(Math.random() * 300)
-    });
-  }
   return {
-    levelId: crypto.randomBytes(6).toString('hex'),
-    name: "Random Level",
-    objects
+    gameVersion: '21',
+    binaryVersion: '35',
+    secret: 'Wmfd2893gb7',
+    gjp: password,  // Password encoded (GD encrypts it — for demo send plaintext, may fail)
+    userName: username,
+    levelName: `RandomLevel_${Date.now()}`,
+    levelDesc: 'Uploaded via proxy',
+    levelVersion: '3',
+    levelString: randomLevelString,
+    auto: '0',
+    twoPlayer: '0',
+    coins: '0',
+    requestedStars: '0',
+    length: '1',
+    // Add any other required params here
   };
 }
 
-module.exports = (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
+module.exports = async (req, res) => {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Only POST allowed' });
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Missing username or password' });
+
+  // Generate level data for upload
+  const levelData = generateRandomLevelData(username, password);
+
+  // Convert to URL-encoded string
+  const params = new URLSearchParams(levelData);
+
+  try {
+    const response = await fetch('https://boomlings.com/database/uploadGJLevel21.php', {
+      method: 'POST',
+      headers: {
+        'User-Agent': 'GeometryDash/35 (iOS; Apple iPhone)',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
+
+    const text = await response.text();
+    res.setHeader('Content-Type', 'text/plain');
+    return res.status(200).send(text);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
-
-  const { sessionId } = req.body;
-  if (!verifySession(sessionId)) {
-    return res.status(401).json({ error: 'Unauthorized: invalid session' });
-  }
-
-  const level = randomLevel();
-
-  // Here, you would normally upload or save the level somewhere.
-
-  res.json({ success: true, uploadedLevel: level });
 };
