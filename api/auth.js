@@ -1,44 +1,40 @@
-// Simple in-memory user store & sessions (for demo only)
-let users = {};
-let sessions = {};
+const fetch = require('node-fetch');
 
-const crypto = require('crypto');
+module.exports = async (req, res) => {
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Only POST allowed' });
 
-function createSession(username) {
-  const sessionId = crypto.randomBytes(16).toString('hex');
-  sessions[sessionId] = username;
-  return sessionId;
-}
+  const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Missing username or password' });
 
-module.exports = (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
+  // Compose form params as GD expects
+  const params = new URLSearchParams({
+    str: username,
+    gjp: password,         // Password encoded? GD uses base64 or special encoding, but sometimes plaintext works.
+    gameVersion: '21',
+    binaryVersion: '35',
+    secret: 'Wmfd2893gb7',
+  });
 
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  try {
+    const response = await fetch('https://boomlings.com/database/getGJUserInfo20.php', {
+      method: 'POST',
+      headers: {
+        'User-Agent': 'GeometryDash/35 (iOS; Apple iPhone)',
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: params.toString(),
+    });
 
-  const { action, username, password, sessionId } = req.body;
+    const text = await response.text();
 
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Missing username or password' });
-  }
-
-  if (action === 'register') {
-    if (users[username]) {
-      return res.status(400).json({ error: 'Username already exists' });
+    if (text.startsWith('-1')) {
+      // Login failed
+      return res.status(401).json({ error: 'Invalid username or password' });
     }
-    users[username] = { password };
-    const newSessionId = createSession(username);
-    return res.json({ success: true, sessionId: newSessionId });
-  }
 
-  if (action === 'login') {
-    if (!users[username] || users[username].password !== password) {
-      return res.status(400).json({ error: 'Invalid credentials' });
-    }
-    const newSessionId = createSession(username);
-    return res.json({ success: true, sessionId: newSessionId });
+    // Login success, return user info
+    return res.status(200).send(text);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
-
-  return res.status(400).json({ error: 'Invalid action' });
 };
